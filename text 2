@@ -1,0 +1,105 @@
+import logging
+from datetime import datetime
+from typing import Any, Dict, List
+
+# --- CONSTANTES GLOBALES (PEP 8) ---
+RECURSO_MAXIMO = 65535
+TIMEOUT_SEGUNDOS = 30
+
+# Configuración básica de registro (logging)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
+# --- FUNCIONES DE VALIDACIÓN Y ENTRADA ---
+def leer_y_validar_entrada(ruta_archivo: str) -> List[Any]:
+    if not ruta_archivo or not ruta_archivo.strip():
+        raise ValueError("La ruta del archivo no puede estar vacía o nula.")
+    
+    try:
+        # Simulación de lectura segura del archivo
+        with open(ruta_archivo, "r", encoding="utf-8") as archivo:
+            datos_crudos = archivo.readlines()
+        return datos_crudos
+    except FileNotFoundError:
+        logger.error(f"El archivo en la ruta '{ruta_archivo}' no fue encontrado.")
+        raise
+    except Exception as e:
+        logger.error(f"Error inesperado al leer el archivo: {e}")
+        raise
+
+
+def validar_parametro_seguridad(valor_objetivo: int) -> bool:
+    # Cláusula de guarda para evitar procesamiento innecesario
+    if valor_objetivo < 1 or valor_objetivo > RECURSO_MAXIMO:
+        return False
+    return True
+
+
+# --- FUNCIONES DE PROCESAMIENTO CENTRAL ---
+def procesar_bloque_operativo(datos_validados: List[Any]) -> List[Dict[str, Any]]:
+    resultados: List[Dict[str, Any]] = []
+    
+    for elemento in datos_validados:
+        # Extracción segura del ID (compatible con objetos o diccionarios)
+        id_elemento = getattr(elemento, "id", None) or (
+            elemento.get("id") if isinstance(elemento, dict) else 0
+        )
+        
+        try:
+            id_val = int(id_elemento)
+        except (ValueError, TypeError):
+            registrar_bitacora_operacion(
+                f"Elemento con ID no numérico o inválido: {id_elemento}", "WARNING"
+            )
+            continue
+
+        if validar_parametro_seguridad(id_val):
+            # Lógica específica sobre el elemento
+            resultado_procesado = {"id": id_val, "estado": "procesado"}
+            resultados.append(resultado_procesado)
+        else:
+            registrar_bitacora_operacion(
+                f"Advertencia de seguridad: ID {id_val} fuera de rango permitido.", "WARNING"
+            )
+            
+    return resultados
+
+
+# --- FUNCIONES DE SALIDA Y AUDITORÍA ---
+def registrar_bitacora_operacion(mensaje_estado: str, nivel: str = "INFO") -> None:
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    mensaje_formateado = f"[{timestamp}] {mensaje_estado}"
+    
+    nivel_upper = nivel.upper()
+    if nivel_upper == "WARNING":
+        logger.warning(mensaje_formateado)
+    elif nivel_upper == "ERROR":
+        logger.error(mensaje_formateado)
+    else:
+        logger.info(mensaje_formateado)
+
+
+# --- FUNCIÓN CONTROLADORA / ORQUESTADORA (Punto de entrada) ---
+def principal() -> None:
+    # 1. Fase de configuración y entrada
+    ruta_config = "config/infraestructura.conf"
+    
+    try:
+        datos = leer_y_validar_entrada(ruta_config)
+        
+        # 2. Fase de procesamiento desacoplado
+        resultados_operacion = procesar_bloque_operativo(datos)
+        
+        # 3. Fase de salida y cierre
+        registrar_bitacora_operacion("Operación completada exitosamente", "INFO")
+        
+    except Exception as e:
+        registrar_bitacora_operacion(f"La operación falló: {e}", "ERROR")
+
+
+if __name__ == "__main__":
+    principal()
