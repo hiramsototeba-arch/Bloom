@@ -1,0 +1,46 @@
+"""Módulo de ordenamiento numérico utilizando el algoritmo Bubble Sort."""
+
+from typing import List
+
+
+def intercambiar_elementos(elementos: List[int], indice_a: int, indice_b: int) -> None:
+    """Intercambia la posición de dos elementos en una lista in-place."""
+    elementos[indice_a], elementos[indice_b] = elementos[indice_b], elementos[indice_a]
+
+
+def ordenar_burbuja(numeros: List[int]) -> List[int]:
+    """Ordena una lista de números enteros de menor a mayor utilizando Bubble Sort.
+
+    Utiliza una copia defensiva para evitar mutaciones directas sobre la lista original
+    y una bandera de optimización para terminar anticipadamente si ya está ordenada.
+    """
+    # Copia defensiva para mantener la función pura respecto a los datos de entrada
+    lista_ordenada = list(numeros)
+    limite_n = len(lista_ordenada)
+
+    for i in range(limite_n - 1):
+        hubo_intercambio = False
+
+        for j in range(limite_n - i - 1):
+            if lista_ordenada[j] > lista_ordenada[j + 1]:
+                intercambiar_elementos(lista_ordenada, j, j + 1)
+                hubo_intercambio = True
+
+        # Optimización: Si en una pasada completa no hubo intercambios, la lista ya está ordenada
+        if not hubo_intercambio:
+            break
+
+    return lista_ordenada
+
+
+# ==========================================
+# Bloque de ejecución principal
+# ==========================================
+if __name__ == "__main__":
+    numeros_desordenados = [64, 34, 25, 12, 22, 11, 90]
+    
+    print(f"Lista original: {numeros_desordenados}")
+    
+    numeros_ordenados = ordenar_burbuja(numeros_desordenados)
+    
+    print(f"Lista ordenada: {numeros_ordenados}")
